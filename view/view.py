@@ -6,7 +6,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.key_binding import KeyBindings
 
 
-tickers_grouped = [
+_TICKERS_GROUPED = [
     ["AAPL", "MSFT", "ASML.AS", "NVDA", "TSLA"],
     ["JPM", "XOM", "UNH", "PG", "KO"],
     ["V", "MA", "META", "GOOGL", "AMZN"],
@@ -14,128 +14,122 @@ tickers_grouped = [
     ["AGG", "BND", "VOO", "SPY", "QQQ"],
     ["BTC-USD", "ETH-USD", "GLD", "SLV", "CASH"],
 ]
+TICKERS = [t for row in _TICKERS_GROUPED for t in row]
 
-tickers = [t for row in tickers_grouped for t in row]
+ASSET_CLASSES = ["Equity", "Crypto", "Fixed Income", "Cash", "Commodity", "ETF"]
 
-CELL_WIDTH = 12  # " TICKER     " — 10 chars padded + 2 spaces
-
-selected_index = 0
-last_ncols = 1  # refreshed on every render; used by arrow keys
+STATUS_HINT = "Arrow keys to move. Enter to select. Ctrl+C to cancel."
 
 
-def compute_ncols():
-    term_cols = get_app().output.get_size().columns
-    # subtract a few chars for the Frame border + padding
-    usable = max(CELL_WIDTH, term_cols - 4)
-    return max(1, usable // CELL_WIDTH)
+def pick_from_list(
+    items: list[str],
+    title: str,
+    input_label: str,
+    transform=None,
+) -> str | None:
+    selected = 0
+    ncols = 1
+    cell_width = max(len(s) for s in items) + 2
 
+    text_input = TextArea(height=1, prompt=input_label, multiline=False)
+    status = TextArea(height=1, text=STATUS_HINT, multiline=False, focusable=False)
 
-def get_grid_text():
-    global last_ncols
-    last_ncols = compute_ncols()
+    def reset_input():
+        text_input.text = ""
+        status.text = STATUS_HINT
 
-    result = []
-    for i, ticker in enumerate(tickers):
-        style = "reverse" if i == selected_index else ""
-        result.append((style, f" {ticker:<10} "))
-        if (i + 1) % last_ncols == 0 and i != len(tickers) - 1:
-            result.append(("", "\n"))
-    return result
+    def compute_ncols():
+        term_cols = get_app().output.get_size().columns
+        usable = max(cell_width, term_cols - 4)
+        return max(1, usable // cell_width)
 
+    def get_grid_text():
+        nonlocal ncols
+        ncols = compute_ncols()
+        result = []
+        for i, item in enumerate(items):
+            style = "reverse" if i == selected else ""
+            result.append((style, f" {item:<{cell_width - 2}} "))
+            if (i + 1) % ncols == 0 and i != len(items) - 1:
+                result.append(("", "\n"))
+        return result
 
-ticker_input = TextArea(
-    height=1,
-    prompt="Type ticker: ",
-    multiline=False,
-)
+    kb = KeyBindings()
 
-status = TextArea(
-    height=1,
-    text="Arrow keys to move. Enter to select. Ctrl+C to cancel.",
-    multiline=False,
-    focusable=False,
-)
+    @kb.add("up")
+    def move_up(event):
+        nonlocal selected
+        new = selected - ncols
+        if new >= 0:
+            selected = new
+        reset_input()
 
+    @kb.add("down")
+    def move_down(event):
+        nonlocal selected
+        new = selected + ncols
+        if new < len(items):
+            selected = new
+        reset_input()
 
-grid_control = FormattedTextControl(get_grid_text)
-grid_window = Window(content=grid_control, wrap_lines=False)
+    @kb.add("left")
+    def move_left(event):
+        nonlocal selected
+        selected = max(0, selected - 1)
+        reset_input()
 
+    @kb.add("right")
+    def move_right(event):
+        nonlocal selected
+        selected = min(len(items) - 1, selected + 1)
+        reset_input()
 
-kb = KeyBindings()
+    @kb.add("enter")
+    def select(event):
+        typed = text_input.text.strip()
+        if typed:
+            event.app.exit(result=transform(typed) if transform else typed)
+        else:
+            event.app.exit(result=items[selected])
 
+    @kb.add("c-c")
+    def cancel(event):
+        event.app.exit(result=None)
 
-def _reset_input():
-    ticker_input.text = ""
-    status.text = "Arrow keys to move. Enter to select. Ctrl+C to cancel."
-
-
-@kb.add("up")
-def move_up(event):
-    global selected_index
-    new = selected_index - last_ncols
-    if new >= 0:
-        selected_index = new
-    _reset_input()
-
-
-@kb.add("down")
-def move_down(event):
-    global selected_index
-    new = selected_index + last_ncols
-    if new < len(tickers):
-        selected_index = new
-    _reset_input()
-
-
-@kb.add("left")
-def move_left(event):
-    global selected_index
-    selected_index = max(0, selected_index - 1)
-    _reset_input()
-
-
-@kb.add("right")
-def move_right(event):
-    global selected_index
-    selected_index = min(len(tickers) - 1, selected_index + 1)
-    _reset_input()
-
-
-@kb.add("enter")
-def select_ticker(event):
-    typed = ticker_input.text.strip().upper()
-    if not typed:
-        event.app.exit(result=tickers[selected_index])
-    elif typed in tickers:
-        event.app.exit(result=typed)
-    else:
-        status.text = f"'{typed}' is not in the ticker list."
-
-
-@kb.add("c-c")
-def quit_app_c(event):
-    event.app.exit(result=None)
-
-
-layout = Layout(
-    HSplit(
-        [
-            Frame(ticker_input, title="Manual ticker input"),
-            Frame(grid_window, title="Ticker grid"),
-            status,
-        ]
+    layout = Layout(
+        HSplit(
+            [
+                Frame(text_input, title=f"Manual {title.lower()} input"),
+                Frame(
+                    Window(content=FormattedTextControl(get_grid_text), wrap_lines=False),
+                    title=title,
+                ),
+                status,
+            ]
+        )
     )
-)
 
-app = Application(
-    layout=layout,
-    key_bindings=kb,
-    full_screen=True,
-    mouse_support=True,
-)
+    return Application(
+        layout=layout,
+        key_bindings=kb,
+        full_screen=True,
+        mouse_support=True,
+    ).run()
 
 
 def pick_ticker() -> str | None:
-    global selected_index
-    selected_index = 0
-    return app.run()
+    return pick_from_list(
+        TICKERS,
+        title="Ticker grid",
+        input_label="Type ticker: ",
+        transform=str.upper,
+    )
+
+
+def pick_asset_class() -> str | None:
+    return pick_from_list(
+        ASSET_CLASSES,
+        title="Asset class",
+        input_label="Type asset class: ",
+        transform=str.title,
+    )
