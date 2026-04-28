@@ -18,6 +18,28 @@ TICKERS = [t for row in _TICKERS_GROUPED for t in row]
 
 ASSET_CLASSES = ["Equity", "Crypto", "Fixed Income", "Cash", "Commodity", "ETF"]
 
+SECTORS_BY_CLASS = {
+    "Equity": [
+        "Technology", "Healthcare", "Financials", "Consumer Discretionary",
+        "Consumer Staples", "Energy", "Industrials", "Materials",
+        "Utilities", "Real Estate", "Communication Services",
+    ],
+    "Crypto": [
+        "DeFi", "NFT", "Layer 1", "Layer 2", "Stablecoin",
+        "Meme", "Privacy", "Gaming/Metaverse", "Infrastructure",
+    ],
+    "Fixed Income": [
+        "Government", "Corporate IG", "Corporate HY",
+        "Municipal", "Emerging Market", "Inflation-Linked", "Mortgage-Backed",
+    ],
+    "Cash": ["Cash", "Money Market"],
+    "Commodity": [
+        "Precious Metals", "Energy", "Agriculture",
+        "Industrial Metals", "Livestock",
+    ],
+    "ETF": ["Equity ETF", "Bond ETF", "Sector ETF", "International", "Thematic"],
+}
+
 STATUS_HINT = "Arrow keys to move. Enter to select. Ctrl+C to cancel."
 
 
@@ -131,5 +153,15 @@ def pick_asset_class() -> str | None:
         ASSET_CLASSES,
         title="Asset class",
         input_label="Type asset class: ",
+        transform=str.title,
+    )
+
+
+def pick_sector(asset_class: str) -> str | None:
+    sectors = SECTORS_BY_CLASS.get(asset_class, ["Other"])
+    return pick_from_list(
+        sectors,
+        title=f"Sector ({asset_class})",
+        input_label="Type sector: ",
         transform=str.title,
     )

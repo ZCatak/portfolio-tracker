@@ -1,6 +1,6 @@
 from model.asset import Asset
 from model.portfolio import Portfolio
-from view.view import pick_ticker, pick_asset_class
+from view.view import pick_ticker, pick_asset_class, pick_sector
 from view.prompts import prompt_asset_details
 
 
@@ -50,6 +50,9 @@ def add_asset(portfolio: Portfolio):
     asset_class = pick_asset_class()
     if asset_class is None:
         return
+    sector = pick_sector(asset_class)
+    if sector is None:
+        return
     details = prompt_asset_details()
-    portfolio.add(Asset(ticker=ticker, asset_class=asset_class, **details))
+    portfolio.add(Asset(ticker=ticker, asset_class=asset_class, sector=sector, **details))
     print(f"Added {details['quantity']} of {ticker} at ${details['purchase_price']} each.")
