@@ -19,13 +19,26 @@ def run():
     portfolio = Portfolio(assets=[])
 
     while True:
-        print("\n1) Add asset   2) Quit")
+        print("\n1) Add asset   2) Quit 3) View portfolio 4) Simulate portfolio")
         choice = input("> ").strip()
 
         if choice == "1":
             add_asset(portfolio)
         elif choice == "2":
             break
+        elif choice == "3":
+            if not portfolio.assets:
+                print("Your portfolio is empty. Please add assets first.")
+            else:
+                pass
+                #view_portfolio(portfolio)
+        elif choice == "4":
+            if not portfolio.assets:
+                print("Your portfolio is empty. Please add assets first.")
+            else:
+                pass
+                #simulate_portfolio(portfolio)
+
         else:
             print("Invalid choice. Please try again.")
 
