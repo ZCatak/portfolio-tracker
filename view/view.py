@@ -134,6 +134,8 @@ app = Application(
     mouse_support=True,
 )
 
-result = app.run()
 
-print(f"You selected: {result}")
+def pick_ticker() -> str | None:
+    global selected_index
+    selected_index = 0
+    return app.run()
