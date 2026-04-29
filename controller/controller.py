@@ -1,8 +1,8 @@
 from model.asset import Asset
 from model.portfolio import Portfolio
 from model.prices import get_current_prices, get_current_price, get_currency, get_fx_rates
-from view.view import pick_ticker, pick_asset_class, pick_sector, pick_owned_ticker
-from view.prompts import prompt_asset_details
+from view.view import pick_ticker, pick_asset_class, pick_sector, pick_owned_ticker, pick_currency
+from view.prompts import prompt_asset_details, prompt_cash_amount
 from view.portfolio_view import print_portfolio, print_summary, print_weights
 
 
@@ -49,8 +49,11 @@ def run():
 
 
 def view_portfolio(portfolio: Portfolio):
-    tickers = [a.ticker for a in portfolio.assets]
-    prices = get_current_prices(tickers)
+    real_tickers = [a.ticker for a in portfolio.assets if not a.ticker.startswith("CASH-")]
+    prices = get_current_prices(real_tickers) if real_tickers else {}
+    for a in portfolio.assets:
+        if a.ticker.startswith("CASH-"):
+            prices[a.ticker] = 1.0
     fx_rates = get_fx_rates(portfolio.currencies(), portfolio.base_currency)
     print_portfolio(portfolio, prices)
     print_summary(portfolio, prices, fx_rates)
@@ -75,6 +78,9 @@ def add_asset(portfolio: Portfolio):
     ticker = pick_ticker()
     if ticker is None:
         return
+    if ticker == "CASH":
+        add_cash(portfolio)
+        return
     currency = get_currency(ticker)
     current_price = get_current_price(ticker)
     asset_class = pick_asset_class()
@@ -94,3 +100,22 @@ def add_asset(portfolio: Portfolio):
         )
     )
     print(f"Added {details['quantity']} of {ticker} at {details['purchase_price']:.2f} {currency} each.")
+
+
+def add_cash(portfolio: Portfolio):
+    currency = pick_currency()
+    if currency is None:
+        return
+    amount = prompt_cash_amount(currency)
+    ticker = f"CASH-{currency}"
+    portfolio.add(
+        Asset(
+            ticker=ticker,
+            asset_class="Cash",
+            sector="Cash",
+            currency=currency,
+            quantity=amount,
+            purchase_price=1.0,
+        )
+    )
+    print(f"Added {amount:.2f} {currency} cash.")

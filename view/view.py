@@ -174,3 +174,15 @@ def pick_owned_ticker(tickers: list[str]) -> str | None:
         input_label="Type ticker: ",
         transform=str.upper,
     )
+
+
+CURRENCIES = ["EUR", "USD", "GBP", "CHF", "JPY", "DKK", "SEK", "NOK"]
+
+
+def pick_currency() -> str | None:
+    return pick_from_list(
+        CURRENCIES,
+        title="Cash currency",
+        input_label="Type currency: ",
+        transform=str.upper,
+    )

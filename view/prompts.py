@@ -27,6 +27,11 @@ def prompt_asset_details(current_price: float | None = None, currency: str = "")
     }
 
 
+def prompt_cash_amount(currency: str) -> float:
+    sym = currency_symbol(currency)
+    return _prompt_float(f"Amount ({sym.strip()}): ")
+
+
 def _prompt_float(label: str) -> float:
     while True:
         try:
