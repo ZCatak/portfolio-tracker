@@ -134,7 +134,7 @@ def pick_from_list(
     return Application(
         layout=layout,
         key_bindings=kb,
-        full_screen=True,
+        full_screen=False,
         mouse_support=True,
     ).run()
 
