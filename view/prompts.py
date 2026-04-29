@@ -1,7 +1,29 @@
-def prompt_asset_details() -> dict:
+CURRENCY_SYMBOLS = {
+    "USD": "$",
+    "EUR": "€",
+    "GBP": "£",
+    "JPY": "¥",
+    "CHF": "CHF ",
+    "DKK": "kr ",
+    "SEK": "kr ",
+    "NOK": "kr ",
+}
+
+
+def currency_symbol(currency: str) -> str:
+    return CURRENCY_SYMBOLS.get(currency, f"{currency} ")
+
+
+def prompt_asset_details(current_price: float | None = None, currency: str = "") -> dict:
+    quantity = _prompt_float("Quantity: ")
+    if current_price is not None:
+        sym = currency_symbol(currency)
+        label = f"Purchase price (current: {sym}{current_price:.2f}): "
+    else:
+        label = "Purchase price: "
     return {
-        "quantity": _prompt_float("Quantity: "),
-        "purchase_price": _prompt_float("Purchase price: "),
+        "quantity": quantity,
+        "purchase_price": _prompt_float(label),
     }
 
 

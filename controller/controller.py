@@ -1,6 +1,6 @@
 from model.asset import Asset
 from model.portfolio import Portfolio
-from model.prices import get_current_prices
+from model.prices import get_current_prices, get_current_price, get_currency, get_fx_rates
 from view.view import pick_ticker, pick_asset_class, pick_sector, pick_owned_ticker
 from view.prompts import prompt_asset_details
 from view.portfolio_view import print_portfolio, print_summary, print_weights
@@ -51,11 +51,12 @@ def run():
 def view_portfolio(portfolio: Portfolio):
     tickers = [a.ticker for a in portfolio.assets]
     prices = get_current_prices(tickers)
+    fx_rates = get_fx_rates(portfolio.currencies(), portfolio.base_currency)
     print_portfolio(portfolio, prices)
-    print_summary(portfolio, prices)
-    print_weights("ticker", portfolio.weights(prices))
-    print_weights("sector", portfolio.weights_by("sector", prices))
-    print_weights("asset class", portfolio.weights_by("asset_class", prices))
+    print_summary(portfolio, prices, fx_rates)
+    print_weights("ticker", portfolio.weights(prices, fx_rates))
+    print_weights("sector", portfolio.weights_by("sector", prices, fx_rates))
+    print_weights("asset class", portfolio.weights_by("asset_class", prices, fx_rates))
 
 
 def remove_asset(portfolio: Portfolio):
@@ -74,12 +75,22 @@ def add_asset(portfolio: Portfolio):
     ticker = pick_ticker()
     if ticker is None:
         return
+    currency = get_currency(ticker)
+    current_price = get_current_price(ticker)
     asset_class = pick_asset_class()
     if asset_class is None:
         return
     sector = pick_sector(asset_class)
     if sector is None:
         return
-    details = prompt_asset_details()
-    portfolio.add(Asset(ticker=ticker, asset_class=asset_class, sector=sector, **details))
-    print(f"Added {details['quantity']} of {ticker} at ${details['purchase_price']} each.")
+    details = prompt_asset_details(current_price=current_price, currency=currency)
+    portfolio.add(
+        Asset(
+            ticker=ticker,
+            asset_class=asset_class,
+            sector=sector,
+            currency=currency,
+            **details,
+        )
+    )
+    print(f"Added {details['quantity']} of {ticker} at {details['purchase_price']:.2f} {currency} each.")
