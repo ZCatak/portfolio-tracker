@@ -4,6 +4,7 @@ from model.prices import get_current_prices, get_current_price, get_currency, ge
 from view.view import pick_ticker, pick_asset_class, pick_sector, pick_owned_ticker, pick_currency
 from view.prompts import prompt_asset_details, prompt_cash_amount
 from view.portfolio_view import print_portfolio, print_summary, print_weights
+from model.simulation import simulate_portfolio
 
 
 ## TODO: Add option to show current and historical price of each ticker and graphing (yfinance, matplotlib).s
@@ -35,8 +36,7 @@ def run():
             if not portfolio.assets:
                 print("Your portfolio is empty. Please add assets first.")
             else:
-                pass
-                #simulate_portfolio(portfolio)
+                simulate(portfolio)
         elif choice == "4":
             if not portfolio.assets:
                 print("Your portfolio is empty. Please add assets first.")
@@ -60,6 +60,16 @@ def view_portfolio(portfolio: Portfolio):
     print_weights("ticker", portfolio.weights(prices, fx_rates))
     print_weights("sector", portfolio.weights_by("sector", prices, fx_rates))
     print_weights("asset class", portfolio.weights_by("asset_class", prices, fx_rates))
+
+
+def simulate(portfolio: Portfolio):
+    real_tickers = [a.ticker for a in portfolio.assets if not a.ticker.startswith("CASH-")]
+    prices = get_current_prices(real_tickers) if real_tickers else {}
+    for a in portfolio.assets:
+        if a.ticker.startswith("CASH-"):
+            prices[a.ticker] = 1.0
+    fx_rates = get_fx_rates(portfolio.currencies(), portfolio.base_currency)
+    simulate_portfolio(portfolio, prices, fx_rates)
 
 
 def remove_asset(portfolio: Portfolio):
