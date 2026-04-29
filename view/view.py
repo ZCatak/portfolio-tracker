@@ -165,3 +165,12 @@ def pick_sector(asset_class: str) -> str | None:
         input_label="Type sector: ",
         transform=str.title,
     )
+
+
+def pick_owned_ticker(tickers: list[str]) -> str | None:
+    return pick_from_list(
+        tickers,
+        title="Remove ticker",
+        input_label="Type ticker: ",
+        transform=str.upper,
+    )

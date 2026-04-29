@@ -1,7 +1,9 @@
 from model.asset import Asset
 from model.portfolio import Portfolio
-from view.view import pick_ticker, pick_asset_class, pick_sector
+from model.prices import get_current_prices
+from view.view import pick_ticker, pick_asset_class, pick_sector, pick_owned_ticker
 from view.prompts import prompt_asset_details
+from view.portfolio_view import print_portfolio, print_summary, print_weights
 
 
 ## TODO: Add option to show current and historical price of each ticker and graphing (yfinance, matplotlib).s
@@ -19,28 +21,53 @@ def run():
     portfolio = Portfolio(assets=[])
 
     while True:
-        print("\n1) Add asset   2) Quit 3) View portfolio 4) Simulate portfolio")
+        print("\n1) Add asset   2) View portfolio   3) Simulate portfolio   4) Remove asset   5) Quit")
         choice = input("> ").strip()
 
         if choice == "1":
             add_asset(portfolio)
         elif choice == "2":
-            break
+            if not portfolio.assets:
+                print("Your portfolio is empty. Please add assets first.")
+            else:
+                view_portfolio(portfolio)
         elif choice == "3":
             if not portfolio.assets:
                 print("Your portfolio is empty. Please add assets first.")
             else:
                 pass
-                #view_portfolio(portfolio)
+                #simulate_portfolio(portfolio)
         elif choice == "4":
             if not portfolio.assets:
                 print("Your portfolio is empty. Please add assets first.")
             else:
-                pass
-                #simulate_portfolio(portfolio)
-
+                remove_asset(portfolio)
+        elif choice == "5":
+            break
         else:
             print("Invalid choice. Please try again.")
+
+
+def view_portfolio(portfolio: Portfolio):
+    tickers = [a.ticker for a in portfolio.assets]
+    prices = get_current_prices(tickers)
+    print_portfolio(portfolio, prices)
+    print_summary(portfolio, prices)
+    print_weights("ticker", portfolio.weights(prices))
+    print_weights("sector", portfolio.weights_by("sector", prices))
+    print_weights("asset class", portfolio.weights_by("asset_class", prices))
+
+
+def remove_asset(portfolio: Portfolio):
+    owned = sorted({a.ticker for a in portfolio.assets})
+    ticker = pick_owned_ticker(owned)
+    if ticker is None:
+        return
+    if ticker not in owned:
+        print(f"{ticker} is not in your portfolio.")
+        return
+    portfolio.remove(ticker)
+    print(f"Removed {ticker} from your portfolio.")
 
 
 def add_asset(portfolio: Portfolio):
